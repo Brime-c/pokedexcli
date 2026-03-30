@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/Brime/pokedexcli/internal/pokeapi"
 )
 
 func startRepl() {
@@ -14,18 +16,38 @@ func startRepl() {
 		"exit": {
 			name:        "exit",
 			description: "Exit the pokedex",
-			callback:    commandExit,
+			callback: func(*config) error {
+				return commandExit()
+			},
 		},
 
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
-			callback: func() error {
+			callback: func(*config) error {
 				return commandHelp(comms)
 			},
 		},
+
+		"map": {
+			name:        "map",
+			description: "Displays the next 20 locations",
+			callback: func(cfg *config) error {
+				return commandMap(cfg)
+			},
+		},
+
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the last 20 locations",
+			callback: func(cfg *config) error {
+				return commandMapb(cfg)
+			},
+		},
 	}
+
 	scanner := bufio.NewScanner(os.Stdin)
+	cfg := &config{}
 	for {
 		fmt.Print("Pokedex > ")
 		scanner.Scan()
@@ -33,7 +55,7 @@ func startRepl() {
 		firstWord := clean[0]
 		comm, ok := comms[firstWord]
 		if ok {
-			err := comm.callback()
+			err := comm.callback(cfg)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -62,6 +84,42 @@ func commandHelp(comms map[string]cliCommand) error {
 	fmt.Println("")
 	for _, comm := range comms {
 		fmt.Printf("%s: %s\n", comm.name, comm.description)
+	}
+	return nil
+}
+
+func commandMap(cfg *config) error {
+	url := "https://pokeapi.co/api/v2/location-area/"
+	if cfg.Next != nil {
+		url = *cfg.Next
+	}
+	data, err := pokeapi.ListLocations(url)
+	if err != nil {
+		return err
+	}
+	cfg.Next = data.Next
+	cfg.Previous = data.Previous
+	for _, location := range data.Results {
+		fmt.Println(location.Name)
+	}
+	return nil
+}
+
+func commandMapb(cfg *config) error {
+	if cfg.Previous == nil {
+		fmt.Println("you're on the first page")
+		return nil
+	}
+	url := *cfg.Previous
+
+	data, err := pokeapi.ListLocations(url)
+	if err != nil {
+		return err
+	}
+	cfg.Next = data.Next
+	cfg.Previous = data.Previous
+	for _, location := range data.Results {
+		fmt.Println(location.Name)
 	}
 	return nil
 }
