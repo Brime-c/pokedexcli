@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Brime/pokedexcli/internal/pokeapi"
+	"github.com/Brime/pokedexcli/internal/pokecache"
 )
 
 func startRepl() {
@@ -47,7 +49,9 @@ func startRepl() {
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
-	cfg := &config{}
+	cfg := &config{
+		Cache: pokecache.NewCache(5 * time.Second),
+	}
 	for {
 		fmt.Print("Pokedex > ")
 		scanner.Scan()
@@ -93,7 +97,7 @@ func commandMap(cfg *config) error {
 	if cfg.Next != nil {
 		url = *cfg.Next
 	}
-	data, err := pokeapi.ListLocations(url)
+	data, err := pokeapi.ListLocations(url, cfg.Cache)
 	if err != nil {
 		return err
 	}
@@ -112,7 +116,7 @@ func commandMapb(cfg *config) error {
 	}
 	url := *cfg.Previous
 
-	data, err := pokeapi.ListLocations(url)
+	data, err := pokeapi.ListLocations(url, cfg.Cache)
 	if err != nil {
 		return err
 	}

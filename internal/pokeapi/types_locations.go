@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/Brime/pokedexcli/internal/pokecache"
 )
 
 type Shallow struct {
@@ -18,7 +20,18 @@ type Location struct {
 	Url  string `json:"url"`
 }
 
-func ListLocations(url string) (Shallow, error) {
+func ListLocations(url string, cache *pokecache.Cache) (Shallow, error) {
+	val, ok := cache.Get(url)
+	if ok {
+		data := Shallow{}
+
+		err := json.Unmarshal(val, &data)
+
+		if err != nil {
+			return Shallow{}, err
+		}
+		return data, nil
+	}
 	res, err := http.Get(url)
 	if err != nil {
 		log.Fatal(err)
@@ -38,5 +51,6 @@ func ListLocations(url string) (Shallow, error) {
 	if err != nil {
 		return Shallow{}, err
 	}
+	cache.Add(url, body)
 	return data, nil
 }

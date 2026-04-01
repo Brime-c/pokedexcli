@@ -1,5 +1,7 @@
 package main
 
+import "github.com/Brime/pokedexcli/internal/pokecache"
+
 type cliCommand struct {
 	name        string
 	description string
@@ -9,4 +11,5 @@ type cliCommand struct {
 type config struct {
 	Next     *string
 	Previous *string
+	Cache    *pokecache.Cache
 }
