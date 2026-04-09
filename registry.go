@@ -1,6 +1,9 @@
 package main
 
-import "github.com/Brime/pokedexcli/internal/pokecache"
+import (
+	"github.com/Brime/pokedexcli/internal/pokeapi"
+	"github.com/Brime/pokedexcli/internal/pokecache"
+)
 
 type cliCommand struct {
 	name        string
@@ -9,7 +12,8 @@ type cliCommand struct {
 }
 
 type config struct {
-	Next     *string
-	Previous *string
-	Cache    *pokecache.Cache
+	Next          *string
+	Previous      *string
+	Cache         *pokecache.Cache
+	caughtPokemon map[string]pokeapi.PokemonData
 }

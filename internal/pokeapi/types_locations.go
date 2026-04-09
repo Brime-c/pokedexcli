@@ -2,6 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,6 +24,11 @@ type Location struct {
 type Pokemon struct {
 	Name string `json:"name"`
 	Url  string `json:"url"`
+}
+
+type PokemonData struct {
+	Name           string `json:"name"`
+	BaseExperience int    `json:"base_experience"`
 }
 
 type PokemonEncounter struct {
@@ -89,7 +95,7 @@ func ListPokemon(area string, cache *pokecache.Cache) ([]PokemonEncounter, error
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if res.StatusCode > 299 {
-		log.Fatalf("Response failed with status code: %d and \nbody: %s\n", res.StatusCode, body)
+		return []PokemonEncounter{}, fmt.Errorf("area not found: %s", area)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -103,5 +109,43 @@ func ListPokemon(area string, cache *pokecache.Cache) ([]PokemonEncounter, error
 	}
 	cache.Add(fullUrl, body)
 	return data.PokemonEncounters, nil
+
+}
+
+func GetPokemon(pokemon string, cache *pokecache.Cache) (PokemonData, error) {
+	const baseURL = "https://pokeapi.co/api/v2/pokemon/"
+	fullUrl := baseURL + pokemon
+	val, ok := cache.Get(fullUrl)
+	if ok {
+		data := PokemonData{}
+
+		err := json.Unmarshal(val, &data)
+
+		if err != nil {
+			return PokemonData{}, err
+		}
+		return data, nil
+	}
+	res, err := http.Get(fullUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode > 299 {
+		return PokemonData{}, fmt.Errorf("pokemon not found: %s", pokemon)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	data := PokemonData{}
+
+	err = json.Unmarshal(body, &data)
+
+	if err != nil {
+		return PokemonData{}, err
+	}
+	cache.Add(fullUrl, body)
+	return data, nil
 
 }

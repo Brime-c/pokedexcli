@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -53,11 +54,19 @@ func startRepl() {
 				return commandExplore(cfg, args)
 			},
 		},
+		"catch": {
+			name:        "catch",
+			description: "Attempts to catch the specified pokemon and add it to the pokedex",
+			callback: func(cfg *config, args []string) error {
+				return commandCatch(cfg, args)
+			},
+		},
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	cfg := &config{
-		Cache: pokecache.NewCache(5 * time.Second),
+		Cache:         pokecache.NewCache(5 * time.Second),
+		caughtPokemon: map[string]pokeapi.PokemonData{},
 	}
 	for {
 		fmt.Print("Pokedex > ")
@@ -149,6 +158,27 @@ func commandExplore(cfg *config, args []string) error {
 	fmt.Println("Found Pokemon:")
 	for _, encounter := range data {
 		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
+	}
+	return nil
+}
+
+func commandCatch(cfg *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("No pokemon specified")
+		return nil
+	}
+	data, err := pokeapi.GetPokemon(args[0], cfg.Cache)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Throwing a Pokeball at %s...\n", args[0])
+	threshold := data.BaseExperience / 2
+	result := rand.Intn(data.BaseExperience)
+	if result < threshold {
+		fmt.Printf("%s was caught!\n", args[0])
+		cfg.caughtPokemon[data.Name] = data
+	} else {
+		fmt.Printf("%s escaped!\n", args[0])
 	}
 	return nil
 }
