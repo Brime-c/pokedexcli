@@ -61,12 +61,26 @@ func startRepl() {
 				return commandCatch(cfg, args)
 			},
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "provides statistics of captured pokemon",
+			callback: func(cfg *config, args []string) error {
+				return commandInspect(cfg, args)
+			},
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Shows captured pokemons",
+			callback: func(cfg *config, args []string) error {
+				return commandPokedex(cfg)
+			},
+		},
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	cfg := &config{
 		Cache:         pokecache.NewCache(5 * time.Second),
-		caughtPokemon: map[string]pokeapi.PokemonData{},
+		caughtPokemon: map[string]pokeapi.Pokemon{},
 	}
 	for {
 		fmt.Print("Pokedex > ")
@@ -176,9 +190,42 @@ func commandCatch(cfg *config, args []string) error {
 	result := rand.Intn(data.BaseExperience)
 	if result < threshold {
 		fmt.Printf("%s was caught!\n", args[0])
+		fmt.Println("You may now inspect it with the inspect command.")
 		cfg.caughtPokemon[data.Name] = data
 	} else {
 		fmt.Printf("%s escaped!\n", args[0])
+	}
+	return nil
+}
+
+func commandInspect(cfg *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("No pokemon specified")
+		return nil
+	}
+	pokemon, ok := cfg.caughtPokemon[args[0]]
+	if !ok {
+		fmt.Println("Pokemon not captured")
+		return nil
+	}
+	fmt.Println("Name:", pokemon.Name)
+	fmt.Println("Height", pokemon.Height)
+	fmt.Println("Weight", pokemon.Weight)
+	fmt.Println("Stats:")
+	for _, stat := range pokemon.Stats {
+		fmt.Printf("  -%s: %v\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Println("Types:")
+	for _, typeinfo := range pokemon.Types {
+		fmt.Printf("  - %s\n", typeinfo.Type.Name)
+	}
+	return nil
+}
+
+func commandPokedex(cfg *config) error {
+	fmt.Println("Your Pokedex:")
+	for _, pokemon := range cfg.caughtPokemon {
+		fmt.Printf("  - %s\n", pokemon.Name)
 	}
 	return nil
 }

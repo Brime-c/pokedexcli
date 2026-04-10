@@ -22,8 +22,22 @@ type Location struct {
 }
 
 type Pokemon struct {
-	Name string `json:"name"`
-	Url  string `json:"url"`
+	Name           string `json:"name"`
+	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	Weight         int    `json:"weight"`
+	Stats          []struct {
+		BaseStat int `json:"base_stat"`
+		Stat     struct {
+			Name string `json:"name"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Type struct {
+			Name string `json:"name"`
+		} `json:"type"`
+	} `json:"types"`
+	Url string `json:"url"`
 }
 
 type PokemonData struct {
@@ -112,17 +126,17 @@ func ListPokemon(area string, cache *pokecache.Cache) ([]PokemonEncounter, error
 
 }
 
-func GetPokemon(pokemon string, cache *pokecache.Cache) (PokemonData, error) {
+func GetPokemon(pokemon string, cache *pokecache.Cache) (Pokemon, error) {
 	const baseURL = "https://pokeapi.co/api/v2/pokemon/"
 	fullUrl := baseURL + pokemon
 	val, ok := cache.Get(fullUrl)
 	if ok {
-		data := PokemonData{}
+		data := Pokemon{}
 
 		err := json.Unmarshal(val, &data)
 
 		if err != nil {
-			return PokemonData{}, err
+			return Pokemon{}, err
 		}
 		return data, nil
 	}
@@ -133,17 +147,17 @@ func GetPokemon(pokemon string, cache *pokecache.Cache) (PokemonData, error) {
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if res.StatusCode > 299 {
-		return PokemonData{}, fmt.Errorf("pokemon not found: %s", pokemon)
+		return Pokemon{}, fmt.Errorf("pokemon not found: %s", pokemon)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
-	data := PokemonData{}
+	data := Pokemon{}
 
 	err = json.Unmarshal(body, &data)
 
 	if err != nil {
-		return PokemonData{}, err
+		return Pokemon{}, err
 	}
 	cache.Add(fullUrl, body)
 	return data, nil

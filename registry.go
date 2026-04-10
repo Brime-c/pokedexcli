@@ -15,5 +15,5 @@ type config struct {
 	Next          *string
 	Previous      *string
 	Cache         *pokecache.Cache
-	caughtPokemon map[string]pokeapi.PokemonData
+	caughtPokemon map[string]pokeapi.Pokemon
 }
